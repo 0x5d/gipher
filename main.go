@@ -14,7 +14,7 @@ import (
 	"strings"
 )
 
-var delay = 1
+var delay = 10
 
 func main() {
 	if len(os.Args) < 3 {
