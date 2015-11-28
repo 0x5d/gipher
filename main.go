@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"image"
 	"image/color/palette"
@@ -14,17 +15,20 @@ import (
 	"strings"
 )
 
-var delay = 10
+var delay *int
 
 func main() {
 	if len(os.Args) < 3 {
 		showUsage()
 		return
 	}
-	args := os.Args[1 : len(os.Args)-1]
-	outPath := os.Args[len(os.Args)-1]
+	delay = flag.Int("d", 25, "The delay between images.")
+	flag.Parse()
+	args := flag.Args()
+	paths := args[:len(args)-1]
+	outPath := args[len(args)-1]
 	var fileNames []string
-	for _, arg := range args {
+	for _, arg := range paths {
 		var err error
 		fileNames, err = getImageFileNamesRec(arg)
 		if err != nil {
@@ -75,7 +79,7 @@ func generateGIF(fileNames []string, outPath string) error {
 		palettedImg := image.NewPaletted(bounds, palette.Plan9)
 		drawer.Draw(palettedImg, bounds, img, image.ZP)
 		anim.Image = append(anim.Image, palettedImg)
-		anim.Delay = append(anim.Delay, delay)
+		anim.Delay = append(anim.Delay, *delay)
 	}
 	file, err := os.Create(outPath)
 	defer file.Close()
@@ -96,5 +100,9 @@ func formatSupported(fileName string) bool {
 }
 
 func showUsage() {
-	fmt.Println("Usage: gipher <folder paths> <output path>")
+	usage := "Usage: gipher [OPTIONS] [in...] out\n\n" +
+		"A small GIF generator made with Go.\n\n" +
+		"Options:\n\n" +
+		"  -d=25\t\tThe delay between frames (in 100s of a second)."
+	fmt.Println(usage)
 }
