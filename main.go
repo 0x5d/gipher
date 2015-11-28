@@ -27,47 +27,47 @@ func main() {
 	args := flag.Args()
 	paths := args[:len(args)-1]
 	outPath := args[len(args)-1]
-	var fileNames []string
+	var filenames []string
 	for _, arg := range paths {
 		var err error
-		fileNames, err = getImageFileNamesRec(arg)
+		filenames, err = getImageFilenamesRec(arg)
 		if err != nil {
 			panic(err)
 		}
 	}
-	err := generateGIF(fileNames, outPath)
+	err := generateGIF(filenames, outPath)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func getImageFileNamesRec(dirName string) ([]string, error) {
+func getImageFilenamesRec(dirName string) ([]string, error) {
 	files, err := ioutil.ReadDir(dirName)
-	var fileNames []string
+	var filenames []string
 	if err != nil {
 		return nil, err
 	}
 	for _, file := range files {
 		if file.IsDir() {
-			childrenFiles, err := getImageFileNamesRec(filepath.Join(dirName, file.Name()))
+			childrenFiles, err := getImageFilenamesRec(filepath.Join(dirName, file.Name()))
 			if err != nil {
 				return nil, err
 			}
-			fileNames = append(fileNames, childrenFiles...)
+			filenames = append(filenames, childrenFiles...)
 		} else if formatSupported(file.Name()) {
-			fileNames = append(fileNames, filepath.Join(dirName, file.Name()))
+			filenames = append(filenames, filepath.Join(dirName, file.Name()))
 		}
 
 	}
-	return fileNames, nil
+	return filenames, nil
 }
 
-func generateGIF(fileNames []string, outPath string) error {
-	anim := gif.GIF{LoopCount: len(fileNames)}
-	for _, fileName := range fileNames {
-		reader, err := os.Open(fileName)
+func generateGIF(filenames []string, outPath string) error {
+	anim := gif.GIF{LoopCount: len(filenames)}
+	for _, filename := range filenames {
+		reader, err := os.Open(filename)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		defer reader.Close()
 		img, _, err := image.Decode(reader)
@@ -93,10 +93,10 @@ func generateGIF(fileNames []string, outPath string) error {
 	return nil
 }
 
-func formatSupported(fileName string) bool {
-	return strings.HasSuffix(fileName, ".png") ||
-		strings.HasSuffix(fileName, ".jpg") ||
-		strings.HasSuffix(fileName, ".jpeg")
+func formatSupported(filename string) bool {
+	return strings.HasSuffix(filename, ".png") ||
+		strings.HasSuffix(filename, ".jpg") ||
+		strings.HasSuffix(filename, ".jpeg")
 }
 
 func showUsage() {
