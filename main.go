@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"flag"
 	"fmt"
 	"image"
@@ -12,10 +14,14 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 var delay *int
+
+var (
+	magicPNG = []byte{0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a}
+	magicJPG = []byte{0xff, 0xd8, 0xff}
+)
 
 func main() {
 	if len(os.Args) < 3 {
@@ -30,7 +36,7 @@ func main() {
 	var filenames []string
 	for _, arg := range paths {
 		var err error
-		filenames, err = getImageFilenamesRec(arg)
+		filenames, err = getImageFilenames(arg)
 		if err != nil {
 			panic(err)
 		}
@@ -41,20 +47,18 @@ func main() {
 	}
 }
 
-func getImageFilenamesRec(dirName string) ([]string, error) {
+func getImageFilenames(dirName string) ([]string, error) {
 	files, err := ioutil.ReadDir(dirName)
 	var filenames []string
 	if err != nil {
 		return nil, err
 	}
 	for _, file := range files {
-		if file.IsDir() {
-			childrenFiles, err := getImageFilenamesRec(filepath.Join(dirName, file.Name()))
-			if err != nil {
-				return nil, err
-			}
-			filenames = append(filenames, childrenFiles...)
-		} else if formatSupported(file.Name()) {
+		isFileSupported, err := fileSupported(filepath.Join(dirName, file.Name()))
+		if err != nil {
+			return nil, err
+		}
+		if !file.IsDir() && isFileSupported {
 			filenames = append(filenames, filepath.Join(dirName, file.Name()))
 		}
 
@@ -93,10 +97,23 @@ func generateGIF(filenames []string, outPath string) error {
 	return nil
 }
 
-func formatSupported(filename string) bool {
-	return strings.HasSuffix(filename, ".png") ||
-		strings.HasSuffix(filename, ".jpg") ||
-		strings.HasSuffix(filename, ".jpeg")
+func fileSupported(filename string) (bool, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return false, err
+	}
+	fileReader := bufio.NewReader(file)
+	headerBytes, err := fileReader.Peek(8)
+	if err != nil {
+		return false, err
+	}
+	switch {
+	case bytes.Equal(headerBytes, magicPNG):
+		return true, nil
+	case bytes.Equal(headerBytes[:len(magicJPG)], magicJPG):
+		return true, nil
+	}
+	return false, nil
 }
 
 func showUsage() {

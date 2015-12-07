@@ -49,4 +49,4 @@ $ gipher -d 50 ~/Pictures/ducks/ ~/Pictures/ducks.gif
 
 - Add tests.
 - Support images of different size.
-- Choose between recursive/ not recursive.
+- Show progress.
