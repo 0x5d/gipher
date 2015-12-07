@@ -14,6 +14,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/gosuri/uiprogress"
 )
 
 var delay *int
@@ -35,6 +37,7 @@ func main() {
 	outPath := args[len(args)-1]
 	var filenames []string
 	for _, arg := range paths {
+		fmt.Printf("Scanning %s\n", arg)
 		var err error
 		filenames, err = getImageFilenames(arg)
 		if err != nil {
@@ -67,6 +70,9 @@ func getImageFilenames(dirName string) ([]string, error) {
 }
 
 func generateGIF(filenames []string, outPath string) error {
+	fmt.Printf("Generating GIF in %s\n", outPath)
+	uiprogress.Start()
+	bar := uiprogress.AddBar(len(filenames)).AppendCompleted()
 	anim := gif.GIF{LoopCount: len(filenames)}
 	for _, filename := range filenames {
 		reader, err := os.Open(filename)
@@ -84,6 +90,7 @@ func generateGIF(filenames []string, outPath string) error {
 		drawer.Draw(palettedImg, bounds, img, image.ZP)
 		anim.Image = append(anim.Image, palettedImg)
 		anim.Delay = append(anim.Delay, *delay)
+		bar.Incr()
 	}
 	file, err := os.Create(outPath)
 	defer file.Close()
